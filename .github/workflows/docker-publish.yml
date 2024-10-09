@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up JDK 21
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v3
       with:
         java-version: '21'
 
@@ -26,6 +26,14 @@ jobs:
 
     - name: Run tests
       run: mvn test
+
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
     - name: Build Docker image
       run: docker build -t saudeinteligente-app .
@@ -36,5 +44,3 @@ jobs:
     steps:
     - name: Deploy to server
       run: |
-        echo "Simulação de deploy"
-        # Aqui você poderia colocar comandos para deploy real, como scp, ssh, etc.
