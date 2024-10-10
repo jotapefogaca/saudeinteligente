@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+# Configura quando o pipeline será acionado
+on:
+  push:
+    branches:
+      - develop  # Branch de desenvolvimento para deploy de teste
+      - master   # Branch principal para deploy de produção
+  pull_request:
+    branches:
+      - develop
+      - master
+
+jobs:
+  # Job para build e testes
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Configurar o JDK 17
+    - name: Set up JDK 17
+      uses: actions/setup-java@v2
+      with:
+        java-version: '17'
+
+    # Construir o projeto com Maven
+    - name: Build with Maven
+      run: mvn clean install -DskipTests
+
+    # Executar os testes
+    - name: Run tests
+      run: mvn test
+
+    # Construir a imagem Docker
+    - name: Build Docker image
+      run: docker build -t saudeinteligente-app .
+
+    # Publicar a imagem no GitHub Container Registry (opcional)
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Push Docker image
+      run: docker push ghcr.io/${{ github.repository }}/saudeinteligente-app:latest
+
+  # Job para deploy de teste (ambiente de desenvolvimento)
+  deploy_test:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'  # Executa apenas para branch 'develop'
+    steps:
+    - name: Deploy to test server
+      run: |
+        echo "Realizando deploy no ambiente de teste"
+        # Aqui você pode inserir os comandos reais para o deploy de teste.
+        # Pode ser uma conexão SSH, SCP, ou usar APIs para serviços de nuvem (Heroku, AWS, etc.)
+
+  # Job para deploy de produção (ambiente de produção)
+  deploy_prod:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'  # Executa apenas para branch 'master'
+    steps:
+    - name: Deploy to production server
+      run: |
+        echo "Realizando deploy no ambiente de produção"
+        # Aqui você pode inserir os comandos reais para o deploy de produção.
+        # Pode ser uma conexão SSH, SCP, ou usar APIs para serviços de nuvem (Heroku, AWS, etc.)
